@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Research Assistant Chatbot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8;
+        }
+        .chat-container {
+            height: 70vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+        .typing-indicator span {
+            animation: blink 1.5s infinite;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes blink {
+            0% { opacity: 0.2; }
+            20% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+        .search-result {
+            border-left: 3px solid #6366f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-4">
+                <h1 class="text-white text-xl font-bold">Research Assistant</h1>
+                <p class="text-indigo-100 text-sm">Ask me anything and I'll search for information!</p>
+            </div>
+            
+            <div id="chat-container" class="chat-container p-4 bg-gray-50">
+                <div class="flex items-start mb-4">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 bg-white rounded-lg py-2 px-4 shadow-sm max-w-[80%]">
+                        <p class="text-gray-700">Hello! I'm your research assistant. Ask me any question, and I'll search for information to help you.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200 bg-white">
+                <form id="chat-form" class="flex items-center">
+                    <input 
+                        type="text" 
+                        id="user-input" 
+                        class="flex-1 border border-gray-300 rounded-l-lg py-2 px-4 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent" 
+                        placeholder="Ask a question..."
+                        autocomplete="off"
+                    >
+                    <button 
+                        type="submit" 
+                        class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-2 px-6 rounded-r-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-4 text-center text-sm text-gray-500">
+            <p>This is a demo research assistant that simulates searching for information.</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const chatContainer = document.getElementById('chat-container');
+            const chatForm = document.getElementById('chat-form');
+            const userInput = document.getElementById('user-input');
+            
+            // Knowledge base - simulated database of information
+            const knowledgeBase = {
+                "climate change": {
+                    title: "Climate Change",
+                    content: "Climate change refers to long-term shifts in temperatures and weather patterns. Human activities have been the main driver of climate change since the 1800s, primarily due to burning fossil fuels like coal, oil, and gas, which produces heat-trapping gases. Global average temperatures have increased by about 1.1°C since pre-industrial times.",
+                    sources: ["IPCC Report 2021", "NASA Global Climate Change"]
+                },
+                "artificial intelligence": {
+                    title: "Artificial Intelligence",
+                    content: "Artificial intelligence (AI) is intelligence demonstrated by machines, as opposed to natural intelligence displayed by animals including humans. AI applications include advanced web search engines, recommendation systems, speech recognition, and self-driving cars. As of 2023, deep learning and large language models have emerged as leading AI technologies.",
+                    sources: ["Stanford AI Index 2023", "MIT Technology Review"]
+                },
+                "renewable energy": {
+                    title: "Renewable Energy",
+                    content: "Renewable energy comes from sources that are naturally replenishing but flow-limited, such as sunlight, wind, rain, tides, waves, and geothermal heat. In 2022, renewable energy provided about 29% of global electricity generation, with hydropower being the largest renewable source, followed by wind and solar power.",
+                    sources: ["International Energy Agency", "REN21 Global Status Report"]
+                },
+                "quantum computing": {
+                    title: "Quantum Computing",
+                    content: "Quantum computing harnesses the phenomena of quantum mechanics to deliver a huge leap forward in computational power. Unlike classical computers that use bits (0 or 1), quantum computers use quantum bits or qubits that can exist in multiple states simultaneously, potentially solving complex problems much faster than classical computers.",
+                    sources: ["IBM Quantum Computing", "Nature Physics Journal"]
+                },
+                "blockchain": {
+                    title: "Blockchain Technology",
+                    content: "Blockchain is a distributed ledger technology that allows data to be stored globally on thousands of servers while letting anyone on the network see everyone else's entries in near real-time. This makes it difficult for one user to gain control of the network. Applications include cryptocurrencies, supply chain tracking, and smart contracts.",
+                    sources: ["MIT Technology Review", "Harvard Business Review"]
+                },
+                "space exploration": {
+                    title: "Space Exploration",
+                    content: "Space exploration is the use of astronomy and space technology to explore outer space. Recent developments include the James Webb Space Telescope, Mars rover missions, and private companies like SpaceX developing reusable rockets. Future goals include returning humans to the Moon, establishing a human presence on Mars, and exploring the outer planets.",
+                    sources: ["NASA", "European Space Agency"]
+                },
+                "nutrition": {
+                    title: "Nutrition Science",
+                    content: "Nutrition science studies how nutrients and other substances in food affect the body. Current research emphasizes personalized nutrition based on individual genetics and microbiome. The Mediterranean diet, rich in fruits, vegetables, whole grains, and healthy fats, continues to show benefits for heart health and longevity in numerous studies.",
+                    sources: ["American Journal of Clinical Nutrition", "Harvard T.H. Chan School of Public Health"]
+                },
+                "mental health": {
+                    title: "Mental Health",
+                    content: "Mental health includes emotional, psychological, and social well-being. Recent research has focused on the connection between gut health and mental health, the impact of social media on well-being, and new treatments for depression and anxiety. The COVID-19 pandemic highlighted the importance of mental health services and telehealth options.",
+                    sources: ["World Health Organization", "American Psychological Association"]
+                },
+                "cryptocurrency": {
+                    title: "Cryptocurrency",
+                    content: "Cryptocurrency is a digital or virtual currency secured by cryptography, making it nearly impossible to counterfeit. Most cryptocurrencies use blockchain technology—a distributed ledger enforced by a network of computers. Bitcoin, created in 2009, was the first cryptocurrency, but thousands now exist with various functions and specifications.",
+                    sources: ["CoinDesk", "Financial Times"]
+                },
+                "genetic engineering": {
+                    title: "Genetic Engineering",
+                    content: "Genetic engineering involves directly manipulating an organism's genes using biotechnology. Recent advances include CRISPR-Cas9 gene editing, which allows for precise modifications to DNA. Applications include treating genetic diseases, creating genetically modified crops with improved yields or nutrition, and developing new pharmaceuticals.",
+                    sources: ["Nature Biotechnology", "Science Magazine"]
+                }
+            };
+            
+            // Basic responses for common queries
+            const basicResponses = {
+                "hello": "Hello! What would you like to research today?",
+                "hi": "Hi there! What topic can I help you find information about?",
+                "how are you": "I'm functioning well and ready to assist with your research questions!",
+                "thank you": "You're welcome! Feel free to ask if you need more information.",
+                "thanks": "You're welcome! Is there anything else you'd like to research?",
+                "bye": "Goodbye! Feel free to return whenever you need research assistance.",
+                "help": "I can search for information on various topics. Just ask a question or mention a subject you're interested in learning about."
+            };
+            
+            chatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const userMessage = userInput.value.trim();
+                if (userMessage === '') return;
+                
+                // Add user message to chat
+                addMessage('user', userMessage);
+                userInput.value = '';
+                
+                // Show typing indicator
+                showTypingIndicator();
+                
+                // Simulate response delay (as if searching for information)
+                setTimeout(() => {
+                    // Remove typing indicator
+                    removeTypingIndicator();
+                    
+                    // Process the query and get response
+                    processQuery(userMessage);
+                }, 1500);
+            });
+            
+            function processQuery(query) {
+                // Check for basic responses first
+                const lowerQuery = query.toLowerCase();
+                
+                if (basicResponses[lowerQuery]) {
+                    addMessage('bot', basicResponses[lowerQuery]);
+                    return;
+                }
+                
+                // Search the knowledge base
+                const results = searchKnowledgeBase(lowerQuery);
+                
+                if (results.length > 0) {
+                    // First add a message that we found something
+                    addMessage('bot', `I found some information that might help with your query about "${query}"`);
+                    
+                    // Then add each result as a separate "research result" message
+                    setTimeout(() => {
+                        results.forEach((result, index) => {
+                            addResearchResult(result);
+                            
+                            // If there are more results, add a small delay between them
+                            if (index < results.length - 1) {
+                                setTimeout(() => {}, 300);
+                            }
+                        });
+                        
+                        // Add a follow-up message
+                        setTimeout(() => {
+                            addMessage('bot', "Is there anything specific about this topic you'd like to know more about?");
+                        }, 500);
+                    }, 500);
+                } else {
+                    // No specific information found
+                    addMessage('bot', `I don't have specific information about "${query}" in my database. Would you like to try a different search term or topic?`);
+                }
+            }
+            
+            function searchKnowledgeBase(query) {
+                const results = [];
+                
+                // Check for exact matches in knowledge base keys
+                for (const key in knowledgeBase) {
+                    if (query.includes(key)) {
+                        results.push(knowledgeBase[key]);
+                    }
+                }
+                
+                // If no exact matches, check for partial matches in content
+                if (results.length === 0) {
+                    for (const key in knowledgeBase) {
+                        if (knowledgeBase[key].content.toLowerCase().includes(query)) {
+                            results.push(knowledgeBase[key]);
+                        }
+                    }
+                }
+                
+                // If still no matches but query is somewhat related to a topic
+                if (results.length === 0) {
+                    const relatedTopics = {
+                        "weather": "climate change",
+                        "global warming": "climate change",
+                        "energy": "renewable energy",
+                        "solar": "renewable energy",
+                        "wind power": "renewable energy",
+                        "computer": "artificial intelligence",
+                        "machine learning": "artificial intelligence",
+                        "crypto": "cryptocurrency",
+                        "bitcoin": "cryptocurrency",
+                        "blockchain": "cryptocurrency",
+                        "dna": "genetic engineering",
+                        "genes": "genetic engineering",
+                        "crispr": "genetic engineering",
+                        "food": "nutrition",
+                        "diet": "nutrition",
+                        "health": "nutrition",
+                        "depression": "mental health",
+                        "anxiety": "mental health",
+                        "psychology": "mental health",
+                        "nasa": "space exploration",
+                        "mars": "space exploration",
+                        "astronomy": "space exploration"
+                    };
+                    
+                    for (const term in relatedTopics) {
+                        if (query.includes(term)) {
+                            const topic = relatedTopics[term];
+                            if (knowledgeBase[topic]) {
+                                results.push(knowledgeBase[topic]);
+                            }
+                        }
+                    }
+                }
+                
+                return results;
+            }
+            
+            function addMessage(sender, message) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'flex items-start mb-4';
+                
+                if (sender === 'user') {
+                    messageDiv.classList.add('flex-row-reverse');
+                    messageDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <div class="mr-3 bg-indigo-100 rounded-lg py-2 px-4 shadow-sm max-w-[80%]">
+                            <p class="text-gray-800">${escapeHTML(message)}</p>
+                        </div>
+                    `;
+                } else {
+                    messageDiv.innerHTML = `
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white flex-shrink-0">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 bg-white rounded-lg py-2 px-4 shadow-sm max-w-[80%]">
+                            <p class="text-gray-700">${escapeHTML(message)}</p>
+                        </div>
+                    `;
+                }
+                
+                chatContainer.appendChild(messageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            function addResearchResult(result) {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'flex items-start mb-4';
+                
+                resultDiv.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 bg-white rounded-lg py-3 px-4 shadow-sm max-w-[85%] search-result">
+                        <h3 class="text-indigo-700 font-semibold text-lg mb-1">${escapeHTML(result.title)}</h3>
+                        <p class="text-gray-700 mb-2">${escapeHTML(result.content)}</p>
+                        <div class="text-xs text-gray-500 mt-1">
+                            <span class="font-medium">Sources:</span> ${escapeHTML(result.sources.join(', '))}
+                        </div>
+                    </div>
+                `;
+                
+                chatContainer.appendChild(resultDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            function showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.id = 'typing-indicator';
+                typingDiv.className = 'flex items-start mb-4';
+                typingDiv.innerHTML = `
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                    </div>
+                    <div class="ml-3 bg-white rounded-lg py-2 px-4 shadow-sm">
+                        <div class="flex items-center">
+                            <span class="text-gray-500 mr-2">Searching</span>
+                            <p class="text-gray-700 typing-indicator">
+                                <span>.</span><span>.</span><span>.</span>
+                            </p>
+                        </div>
+                    </div>
+                `;
+                
+                chatContainer.appendChild(typingDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+            
+            function removeTypingIndicator() {
+                const typingIndicator = document.getElementById('typing-indicator');
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+            }
+            
+            // Helper function to escape HTML
+            function escapeHTML(str) {
+                return str.replace(/[&<>'"]/g, 
+                    tag => ({
+                        '&': '&amp;',
+                        '<': '&lt;',
+                        '>': '&gt;',
+                        "'": '&#39;',
+                        '"': '&quot;'
+                    }[tag]));
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'966bc96de6c7032f',t:'MTc1Mzc4MzQxMS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
